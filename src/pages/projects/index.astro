@@ -1,0 +1,20 @@
+---
+import Base from '../../layouts/Base.astro';
+// Case studies live in src/pages/projects/<slug>.astro. Add one here once its content is cleared for publication.
+const projects: { href: string; title: string; summary: string; tags: string[] }[] = [];
+---
+<Base title="Projects — Chi-Yi Hsu">
+  <h1>Projects</h1>
+  {projects.length === 0 ? (
+    <p class="muted">Case studies and live demos are being prepared and will appear here soon.</p>
+  ) : (
+    <div class="cards">
+      {projects.map((p) => (
+        <a class="card" href={p.href} style="text-decoration:none;color:inherit">
+          <h3>{p.title}</h3><p>{p.summary}</p>
+          <div class="tags">{p.tags.map((t) => <span>{t}</span>)}</div>
+        </a>
+      ))}
+    </div>
+  )}
+</Base>

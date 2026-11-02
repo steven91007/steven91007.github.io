@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+const focus = [
+  { t: 'LLM agents', d: 'Multi-step agents with tool calling, rules kept in code, and human review where a person must decide.' },
+  { t: 'Evaluation', d: 'Labelled test sets, regression replay and release checks for non-deterministic systems.' },
+  { t: 'MLOps & delivery', d: 'Containerised Python services, CI/CD with approval-gated releases, on-prem deployment.' },
+  { t: 'Computer vision & document AI', d: 'Detection, OCR and multimodal extraction, from data labelling to production.' },
+];
+---
+<Base title="Chi-Yi (Amo) Hsu — AI Engineer">
+  <p class="muted">Senior AI Engineer · based in Germany</p>
+  <h1>I build AI systems that people rely on in daily work.</h1>
+  <p>
+    Six years of industry experience taking LLM agents, evaluation pipelines and computer-vision models
+    from first prototype to production — and owning them afterwards through maintenance and incident response.
+  </p>
+
+  <h2>What I work on</h2>
+  <div class="cards">
+    {focus.map((f) => <div class="card"><h3>{f.t}</h3><p>{f.d}</p></div>)}
+  </div>
+
+  <h2>Projects</h2>
+  <p>Case studies and demos are on the <a href="/projects/">projects page</a>.</p>
+</Base>
