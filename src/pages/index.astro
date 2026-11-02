@@ -20,6 +20,11 @@ const focus = [
     {focus.map((f) => <div class="card"><h3>{f.t}</h3><p>{f.d}</p></div>)}
   </div>
 
-  <h2>Projects</h2>
-  <p>Case studies and demos are on the <a href="/projects/">projects page</a>.</p>
+  <h2>Featured project</h2>
+  <a class="card" href="/projects/line-order-agent/" style="display:block;text-decoration:none;color:inherit;margin-top:16px">
+    <h3>LINE Order Extraction Agent</h3>
+    <p>An LLM agent that reads a raw LINE group chat and writes every real order to Google Sheets — two-pass
+       extraction, verified writes, traced end to end. Includes an interactive demo.</p>
+  </a>
+  <p>More on the <a href="/projects/">projects page</a>.</p>
 </Base>

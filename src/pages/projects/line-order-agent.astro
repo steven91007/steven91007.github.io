@@ -1,0 +1,48 @@
+---
+import Base from '../../layouts/Base.astro';
+const stack = ['Python', 'DSPy', 'LLM extraction', 'Google Sheets API', 'Langfuse tracing', 'LINE Messaging API'];
+---
+<Base title="LINE Order Extraction Agent — Chi-Yi Hsu"
+      description="An LLM agent that turns a messy LINE group chat into clean, verified gift-box orders.">
+  <p class="muted"><a href="/projects/">Projects</a> · Side project · 2025–2026</p>
+  <h1>LINE Order Extraction Agent</h1>
+  <p>
+    A small fruit gift-box shop took orders in a LINE group chat and retyped every one into a spreadsheet.
+    Customers split one order over five messages, change quantities halfway, send gifts to two addresses,
+    and chat without buying. This agent reads the raw conversation, extracts every order that was actually
+    placed, and writes clean rows to Google Sheets, grouped by ship date.
+  </p>
+
+  <p><a href="/demos/line-order-agent/"><strong>Open the interactive demo →</strong></a>
+     <span class="muted">(replays a real pipeline run on sample data; sensitive fields can be masked)</span></p>
+
+  <h2>How it works</h2>
+  <ol>
+    <li><strong>Clean the input</strong> — strip emoji and noise before the model sees the text.</li>
+    <li><strong>Extract</strong> — one LLM call over the whole conversation; the DSPy signature is the spec:
+        the last amendment wins, cancelled orders are dropped.</li>
+    <li><strong>Second pass for missed orders</strong> — the model re-reads the log against what pass one found.
+        It usually returns an empty list, and that empty list is what the extra call pays for.</li>
+    <li><strong>Normalise</strong> — map items to options that actually exist, build one identity key per order
+        (phone and date normalised) so duplicates are caught.</li>
+    <li><strong>Write safely</strong> — verify the sheet's columns before every write, so a schema change fails
+        loudly instead of putting phone numbers into the address column.</li>
+    <li><strong>Trace</strong> — one Langfuse session per order, to see exactly which call produced which value.</li>
+  </ol>
+
+  <h2>Design decisions</h2>
+  <ul>
+    <li>Pay for a second LLM pass on every import: a missed order costs the shop a customer, an extra call costs cents.</li>
+    <li>The model only returns a spec and a count; prices and product names come from code, never from the model.</li>
+    <li>Date tabs are a projection of the main sheet, not a copy, so there is one source of truth.</li>
+  </ul>
+
+  <h2>Status — what is not built yet</h2>
+  <p class="muted">
+    The LINE webhook is wired but not deployed, so chat logs are pasted in by hand today; the daily push of the
+    packing summary and an auto-learning loop are designed but not finished. The demo lists these openly.
+  </p>
+
+  <div class="tags">{stack.map((s) => <span>{s}</span>)}</div>
+  <p style="margin-top:24px"><a href="https://github.com/steven91007/lineorderllm">Source on GitHub</a></p>
+</Base>
