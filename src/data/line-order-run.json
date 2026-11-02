@@ -1,0 +1,329 @@
+{
+ "model": "gpt-5.6-luna",
+ "built_at": "2026-08-15",
+ "cases": [
+  {
+   "id": "single",
+   "title": "One order, scattered across messages",
+   "note": "Emoji throughout, and the details arrive in five separate messages.",
+   "total_ms": 3960,
+   "messages": [
+    {
+     "time": "09:02",
+     "who": "Xiaomei😊",
+     "text": "Hi boss🙏 I'd like to order some pears"
+    },
+    {
+     "time": "09:03",
+     "who": "Xiaomei😊",
+     "text": "Sender is Lin Xiaomei 0912345678"
+    },
+    {
+     "time": "09:04",
+     "who": "Xiaomei😊",
+     "text": "1️⃣ Recipient Wang Datong 0922333444 5F, No.100, Sec.2, Nanjing E. Rd., Zhongshan Dist., Taipei🏠"
+    },
+    {
+     "time": "09:05",
+     "who": "Xiaomei😊",
+     "text": "Just one box of 20A❤️ please deliver on 8/19🚚"
+    },
+    {
+     "time": "09:30",
+     "who": "Xiaomei😊",
+     "text": "Transfer done, last five digits 12345✅"
+    }
+   ],
+   "clean": [
+    {
+     "time": "09:02",
+     "who": "Xiaomei",
+     "text": "Hi boss I'd like to order some pears"
+    },
+    {
+     "time": "09:03",
+     "who": "Xiaomei",
+     "text": "Sender is Lin Xiaomei 0912345678"
+    },
+    {
+     "time": "09:04",
+     "who": "Xiaomei",
+     "text": "1 Recipient Wang Datong 0922333444 5F, No.100, Sec.2, Nanjing E. Rd., Zhongshan Dist., Taipei"
+    },
+    {
+     "time": "09:05",
+     "who": "Xiaomei",
+     "text": "Just one box of 20A please deliver on 8/19"
+    },
+    {
+     "time": "09:30",
+     "who": "Xiaomei",
+     "text": "Transfer done, last five digits 12345"
+    }
+   ],
+   "events": [
+    {
+     "stage": "sanitize",
+     "removed": 13
+    },
+    {
+     "stage": "extract",
+     "orders": [
+      {
+       "recipient": "Wang Datong",
+       "spec": "20A",
+       "boxes": 1,
+       "date": "2026-08-19"
+      }
+     ]
+    },
+    {
+     "stage": "recall",
+     "found": [],
+     "ms": 2
+    },
+    {
+     "stage": "address",
+     "changed": true,
+     "before": "台北市中山區南京東路二段100號5樓",
+     "after": "臺北市中山區南京東路二段100號5樓",
+     "note": "same address; 台 replaced with 臺, the official character"
+    },
+    {
+     "stage": "option",
+     "in": "gift box: spec=20A qty=1",
+     "out": "20A gift box · 1 box · $1,150"
+    },
+    {
+     "stage": "row",
+     "status": "review",
+     "problems": [
+      "sender address not provided"
+     ],
+     "cells": {
+      "orderer": "小美",
+      "sender": "林小美",
+      "recipient": "王大同",
+      "phone": "0922333444",
+      "address": "臺北市中山區南京東路二段100號5樓",
+      "item": "20A gift box · 1 box · $1,150",
+      "last5": "12345",
+      "date": "2026/8/19"
+     }
+    },
+    {
+     "stage": "dedup",
+     "key": "Wang Datong|0922333444|2026-08-19",
+     "status": "review"
+    }
+   ]
+  },
+  {
+   "id": "multi",
+   "title": "Two recipients, one amendment, one non-order",
+   "note": "A gift order split across two addresses, a quantity change, and a browser who never buys.",
+   "total_ms": 11460,
+   "messages": [
+    {
+     "time": "10:12",
+     "who": "A-Zhe",
+     "text": "I want to order two gifts for clients"
+    },
+    {
+     "time": "10:12",
+     "who": "A-Zhe",
+     "text": "Put Zhang A-Zhe 0933222111 as the sender"
+    },
+    {
+     "time": "10:13",
+     "who": "A-Zhe",
+     "text": "First one: Chen Meihui 0955111222 3F, No.88, Sec.1, Guangfu Rd., East Dist., Hsinchu City"
+    },
+    {
+     "time": "10:14",
+     "who": "A-Zhe",
+     "text": "Second one: Wu Jianliang 0966333444 12F, No.99, Sec.3, Taiwan Blvd., Xitun Dist., Taichung City"
+    },
+    {
+     "time": "10:15",
+     "who": "A-Zhe",
+     "text": "Both 18A two boxes, deliver on the 19th"
+    },
+    {
+     "time": "10:41",
+     "who": "Passerby",
+     "text": "Do you still have stock?"
+    },
+    {
+     "time": "10:42",
+     "who": "Owner",
+     "text": "Yes we do"
+    },
+    {
+     "time": "10:44",
+     "who": "Passerby",
+     "text": "OK, let me think about it"
+    },
+    {
+     "time": "11:02",
+     "who": "A-Zhe",
+     "text": "Sorry — change the first one to 18A four boxes"
+    },
+    {
+     "time": "19:20",
+     "who": "A-Zhe",
+     "text": "Transferred, last five digits 53900"
+    }
+   ],
+   "clean": [
+    {
+     "time": "10:12",
+     "who": "A-Zhe",
+     "text": "I want to order two gifts for clients"
+    },
+    {
+     "time": "10:12",
+     "who": "A-Zhe",
+     "text": "Put Zhang A-Zhe 0933222111 as the sender"
+    },
+    {
+     "time": "10:13",
+     "who": "A-Zhe",
+     "text": "First one: Chen Meihui 0955111222 3F, No.88, Sec.1, Guangfu Rd., East Dist., Hsinchu City"
+    },
+    {
+     "time": "10:14",
+     "who": "A-Zhe",
+     "text": "Second one: Wu Jianliang 0966333444 12F, No.99, Sec.3, Taiwan Blvd., Xitun Dist., Taichung City"
+    },
+    {
+     "time": "10:15",
+     "who": "A-Zhe",
+     "text": "Both 18A two boxes, deliver on the 19th"
+    },
+    {
+     "time": "10:41",
+     "who": "Passerby",
+     "text": "Do you still have stock?"
+    },
+    {
+     "time": "10:42",
+     "who": "Owner",
+     "text": "Yes we do"
+    },
+    {
+     "time": "10:44",
+     "who": "Passerby",
+     "text": "OK, let me think about it"
+    },
+    {
+     "time": "11:02",
+     "who": "A-Zhe",
+     "text": "Sorry — change the first one to 18A four boxes"
+    },
+    {
+     "time": "19:20",
+     "who": "A-Zhe",
+     "text": "Transferred, last five digits 53900"
+    }
+   ],
+   "events": [
+    {
+     "stage": "sanitize",
+     "removed": 0
+    },
+    {
+     "stage": "extract",
+     "orders": [
+      {
+       "recipient": "Chen Meihui",
+       "spec": "18A",
+       "boxes": 4,
+       "date": "2026-08-19"
+      },
+      {
+       "recipient": "Wu Jianliang",
+       "spec": "18A",
+       "boxes": 2,
+       "date": "2026-08-19"
+      }
+     ]
+    },
+    {
+     "stage": "recall",
+     "found": [],
+     "ms": 5679
+    },
+    {
+     "stage": "address",
+     "changed": false,
+     "before": "新竹市東區光復路一段88號3樓",
+     "after": "新竹市東區光復路一段88號3樓",
+     "note": "already in standard form, unchanged"
+    },
+    {
+     "stage": "option",
+     "in": "gift box: spec=18A qty=4",
+     "out": "18A gift box · 4 boxes · $3,700"
+    },
+    {
+     "stage": "row",
+     "status": "review",
+     "problems": [
+      "sender address not provided",
+      "first recipient amended from 18A two boxes to 18A four boxes"
+     ],
+     "cells": {
+      "orderer": "阿哲",
+      "sender": "張阿哲",
+      "recipient": "陳美惠",
+      "phone": "0955111222",
+      "address": "新竹市東區光復路一段88號3樓",
+      "item": "18A gift box · 4 boxes · $3,700",
+      "last5": "53900",
+      "date": "2026/8/19"
+     }
+    },
+    {
+     "stage": "address",
+     "changed": true,
+     "before": "台中市西屯區台灣大道三段99號12樓",
+     "after": "臺中市西屯區臺灣大道三段99號12樓",
+     "note": "same address; 台 replaced with 臺, the official character"
+    },
+    {
+     "stage": "option",
+     "in": "gift box: spec=18A qty=2",
+     "out": "18A gift box · 2 boxes · $1,910"
+    },
+    {
+     "stage": "row",
+     "status": "review",
+     "problems": [
+      "sender address not provided"
+     ],
+     "cells": {
+      "orderer": "阿哲",
+      "sender": "張阿哲",
+      "recipient": "吳建良",
+      "phone": "0966333444",
+      "address": "臺中市西屯區臺灣大道三段99號12樓",
+      "item": "18A gift box · 2 boxes · $1,910",
+      "last5": "53900",
+      "date": "2026/8/19"
+     }
+    },
+    {
+     "stage": "dedup",
+     "key": "Chen Meihui|0955111222|2026-08-19",
+     "status": "review"
+    },
+    {
+     "stage": "dedup",
+     "key": "Wu Jianliang|0966333444|2026-08-19",
+     "status": "review"
+    }
+   ]
+  }
+ ]
+}

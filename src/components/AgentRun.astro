@@ -1,0 +1,398 @@
+---
+// Animated replay of a recorded LineOrderLLM pipeline run (src/data/line-order-run.json).
+// Chat → agent pipeline → Google Sheet, with a live trace log. All logic is in the TS script below.
+const stages = [
+  { id: 'paste', name: 'Paste log', sub: 'local Flask UI', icon: '📋' },
+  { id: 'sanitize', name: 'Sanitize', sub: 'emoji · zero-width', icon: '🧹' },
+  { id: 'extract', name: 'Extract', sub: 'DSPy · pass 1', icon: '🧠' },
+  { id: 'recall', name: 'Recall', sub: 'DSPy · pass 2: missed orders?', icon: '🔍' },
+  { id: 'rules', name: 'Rules', sub: 'address · form options', icon: '📐' },
+  { id: 'dedup', name: 'Dedup', sub: 'identity key · status', icon: '🔑' },
+  { id: 'gate', name: 'Human gate', sub: 'owner confirms flagged rows', icon: '🙋' },
+  { id: 'write', name: 'Write sheet', sub: 'verify columns A:L', icon: '📊' },
+];
+---
+<section class="ar" id="agent-run" aria-label="Animated replay of the order extraction agent">
+  <div class="ar-bar">
+    <div class="ar-tabs" role="tablist">
+      <button class="ar-tab" data-case="single" role="tab">① One order, five messages</button>
+      <button class="ar-tab" data-case="multi" role="tab">② Two recipients + an amendment</button>
+    </div>
+    <div class="ar-ctrl">
+      <button class="ar-btn" data-act="play" aria-label="Play or pause">⏸ Pause</button>
+      <button class="ar-btn" data-act="restart" aria-label="Restart">↺ Restart</button>
+      <button class="ar-btn" data-act="speed" aria-label="Playback speed">1×</button>
+      <label class="ar-mask"><input type="checkbox" data-act="mask" /> Mask PII</label>
+    </div>
+  </div>
+  <p class="ar-note" data-el="note"></p>
+
+  <div class="ar-grid">
+    <!-- chat -->
+    <div class="ar-col">
+      <div class="ar-h">Customer chat <span>LINE group</span></div>
+      <div class="phone">
+        <div class="phone-top"><span class="dot"></span> Pear Gift Shop</div>
+        <div class="chat" data-el="chat"></div>
+        <div class="scan" data-el="scan"><span>re-reading the log for missed orders…</span></div>
+      </div>
+    </div>
+
+    <!-- pipeline -->
+    <div class="ar-col">
+      <div class="ar-h">Agent pipeline <span data-el="model"></span></div>
+      <ol class="pipe">
+        {stages.map((s) => (
+          <li class="node" data-stage={s.id}>
+            <div class="node-ic">{s.icon}</div>
+            <div class="node-body">
+              <div class="node-name">{s.name}</div>
+              <div class="node-sub">{s.sub}</div>
+              <div class="node-out" data-out={s.id}></div>
+            </div>
+            <div class="node-st"></div>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <!-- sheet -->
+    <div class="ar-col">
+      <div class="ar-h">Google Sheet <span>form responses</span></div>
+      <div class="sheet">
+        <div class="sheet-verify" data-el="verify">columns A:L — not checked</div>
+        <table>
+          <thead><tr><th>Recipient</th><th>Phone</th><th>Address</th><th>Item</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody data-el="rows"></tbody>
+        </table>
+        <div class="sheet-empty" data-el="empty">rows appear here after the human gate</div>
+      </div>
+      <div class="ar-h" style="margin-top:14px">Agent trace <span data-el="clock">0.0 s</span></div>
+      <div class="trace" data-el="trace"></div>
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  /* global, not scoped: most of these elements are created at runtime by the script below */
+  .ar { --g: #06c755; --gbg: rgba(6,199,85,.12); --amb: #e0a100; --abg: rgba(224,161,0,.14); --ac: var(--accent);
+        border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 14px; margin: 18px 0 8px; }
+  .ar-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+  .ar-tabs, .ar-ctrl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ar-tab, .ar-btn { font: inherit; font-size: .85rem; border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+                     border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .ar-tab[aria-selected='true'] { border-color: var(--ac); color: var(--ac); font-weight: 600; }
+  .ar-btn:hover, .ar-tab:hover { border-color: var(--ac); }
+  .ar-mask { font-size: .85rem; color: var(--muted); display: flex; gap: 4px; align-items: center; }
+  .ar-note { color: var(--muted); font-size: .9rem; margin: 8px 2px 10px; min-height: 1.3em; }
+  .ar-grid { display: grid; grid-template-columns: .95fr 1fr 1.35fr; gap: 14px; }
+  .ar-col { min-width: 0; }
+  @media (min-width: 981px) { .ar-col:nth-child(1), .ar-col:nth-child(3) { position: sticky; top: 12px; align-self: start; } }
+  @media (max-width: 980px) { .ar-grid { grid-template-columns: 1fr; } }
+  .ar-h { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--muted);
+          margin: 0 0 6px; display: flex; justify-content: space-between; }
+  .ar-h span { text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+  /* phone */
+  .phone { position: relative; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #8cabd9; }
+  .phone-top { background: #273246; color: #fff; font-size: .85rem; padding: 8px 12px; display: flex; gap: 8px; align-items: center; }
+  .phone-top .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--g); display: inline-block; }
+  .chat { height: 420px; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 7px; scroll-behavior: smooth; }
+  .msg { display: flex; flex-direction: column; max-width: 92%; animation: pop .35s ease-out both; }
+  .msg .who { font-size: .68rem; color: #1d2b44; margin: 0 0 2px 6px; }
+  .bub { background: #fff; color: #111; border-radius: 4px 14px 14px 14px; padding: 6px 10px; font-size: .82rem; line-height: 1.4;
+         transition: box-shadow .4s, background .4s; }
+  .msg .t { font-size: .62rem; color: #23324a; margin: 2px 0 0 6px; }
+  .msg.other .bub { background: #e9eef6; color: #555; }
+  .msg.read .bub { box-shadow: 0 0 0 2px var(--g); }
+  .emo { display: inline-block; transition: opacity .5s, transform .5s, width .5s; }
+  .emo.gone { opacity: 0; transform: scale(.2) translateY(-6px); }
+  .scan { position: absolute; inset: 37px 0 0 0; pointer-events: none; opacity: 0; transition: opacity .3s;
+          background: linear-gradient(180deg, transparent 0%, rgba(6,199,85,.22) 48%, transparent 52%) no-repeat;
+          background-size: 100% 220%; display: flex; align-items: flex-end; justify-content: center; }
+  .scan span { background: rgba(39,50,70,.9); color: #fff; font-size: .72rem; padding: 3px 9px; border-radius: 999px; margin-bottom: 10px; }
+  .scan.on { opacity: 1; animation: sweep 1.2s linear infinite; }
+
+  /* pipeline */
+  .pipe { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+  .node { position: relative; display: grid; grid-template-columns: 34px 1fr 22px; gap: 8px; align-items: start;
+          padding: 7px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); margin-bottom: 14px;
+          opacity: .55; transition: opacity .3s, border-color .3s, box-shadow .3s, transform .3s; }
+  .node:not(:last-child)::after { content: ''; position: absolute; left: 24px; bottom: -15px; width: 2px; height: 14px; background: var(--line); }
+  .node.flow:not(:last-child)::after { background: linear-gradient(var(--ac), var(--ac)) no-repeat; animation: pulseLine .6s linear infinite; }
+  .node-ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--card); font-size: 1rem; }
+  .node-name { font-weight: 650; font-size: .9rem; }
+  .node-sub { font-size: .72rem; color: var(--muted); }
+  .node-out { font-size: .76rem; margin-top: 3px; display: flex; flex-direction: column; gap: 3px; }
+  .node-out:empty { display: none; }
+  .node.active { opacity: 1; border-color: var(--ac); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac) 22%, transparent); transform: translateX(3px); }
+  .node.active .node-ic { animation: spin 1.1s ease-in-out infinite; }
+  .node.done { opacity: 1; }
+  .node.done .node-st::before { content: '✓'; color: var(--g); font-weight: 800; }
+  .node.warn { opacity: 1; border-color: var(--amb); }
+  .node.warn .node-st::before { content: '!'; color: var(--amb); font-weight: 800; }
+  .chip { display: inline-block; border-radius: 6px; padding: 2px 7px; background: var(--card); border: 1px solid var(--line);
+          animation: pop .3s ease-out both; width: fit-content; max-width: 100%; overflow-wrap: anywhere; }
+  .chip.ok { background: var(--gbg); border-color: transparent; }
+  .chip.warn { background: var(--abg); border-color: transparent; }
+  .chip code { font-size: .72rem; }
+  .diff b { color: var(--g); background: var(--gbg); border-radius: 3px; padding: 0 2px; }
+
+  /* sheet */
+  .sheet { border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; background: var(--bg); position: relative; }
+  .sheet table { width: 100%; border-collapse: collapse; font-size: .7rem; }
+  .sheet th:nth-child(2), .sheet td:nth-child(2) { display: none; }   /* phone: in the dedup key already */
+  .sheet th { background: #e8f0e8; color: #2f5e36; text-align: left; padding: 5px 6px; font-weight: 650; white-space: nowrap; }
+  @media (prefers-color-scheme: dark) { .sheet th { background: #1f3324; color: #9bd3a4; } }
+  .sheet td { border-top: 1px solid var(--line); padding: 5px 6px; vertical-align: top; }
+  .sheet tr.new td { animation: rowIn .6s ease-out both; }
+  .sheet td.typing::after { content: '▍'; color: var(--ac); animation: blink .7s steps(1) infinite; }
+  .sheet-verify { font-size: .72rem; padding: 5px 8px; color: var(--muted); border-bottom: 1px solid var(--line); }
+  .sheet-verify.ok { color: var(--g); font-weight: 600; }
+  .sheet-empty { font-size: .75rem; color: var(--muted); padding: 14px 8px; text-align: center; }
+  .st { border-radius: 999px; padding: 1px 7px; font-size: .68rem; white-space: nowrap; }
+  .st.review { background: var(--abg); color: var(--amb); }
+  .st.approved { background: var(--gbg); color: var(--g); }
+
+  /* trace */
+  .trace { height: 170px; overflow-y: auto; background: #0f141a; color: #cfd8e3; border-radius: 10px; padding: 8px 10px;
+           font: 12px/1.55 ui-monospace, 'Cascadia Mono', Consolas, monospace; scroll-behavior: smooth; }
+  .trace div { animation: fadeIn .25s ease-out both; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .trace .tag { color: #6fb0f0; }
+  .trace .okc { color: #4ade80; }
+  .trace .wc { color: #fbbf24; }
+  .trace .dim { color: #7b8794; }
+
+  .pii { transition: filter .3s; }
+  .masked .pii { filter: blur(5px); }
+
+  @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes sweep { from { background-position: 0 120%; } to { background-position: 0 -20%; } }
+  @keyframes pulseLine { 0% { background-size: 2px 0; } 100% { background-size: 2px 100%; } }
+  @keyframes spin { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-12deg) scale(1.08); } }
+  @keyframes rowIn { from { background: var(--gbg); } to { background: transparent; } }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .ar * { animation: none !important; transition: none !important; } }
+</style>
+
+<script>
+  import run from '../data/line-order-run.json';
+
+  type Msg = { time: string; who: string; text: string };
+  type Ev = { stage: string; [k: string]: any };
+  type Case = { id: string; title: string; note: string; total_ms: number; messages: Msg[]; clean: Msg[]; events: Ev[] };
+
+  const root = document.getElementById('agent-run')!;
+  const $ = <T extends HTMLElement = HTMLElement>(sel: string) => root.querySelector(sel) as T;
+  const el = (name: string) => $(`[data-el="${name}"]`);
+  const cases = (run as { cases: Case[]; model: string }).cases;
+  el('model').textContent = `model: ${(run as any).model}`;
+
+  const EMOJI = /(\p{Extended_Pictographic}|⃣|️)/gu;
+  const PHONE = /09\d{8}/g;
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+  let speed = 1, paused = false, token = 0, clock = 0, piiNames: string[] = [];
+
+  // ---------------------------------------------------------------- timing
+  async function wait(ms: number, my: number) {
+    let left = ms / speed;
+    while (left > 0) {
+      if (my !== token) throw new Error('cancelled');
+      await new Promise((r) => setTimeout(r, 40));
+      if (!paused) { left -= 40; clock += 40 * speed; el('clock').textContent = `${(clock / 1000).toFixed(1)} s`; }
+    }
+  }
+
+  // ---------------------------------------------------------------- rendering helpers
+  function pii(text: string) {
+    let h = esc(text).replace(PHONE, (m) => `<span class="pii">${m}</span>`);
+    for (const n of piiNames) if (n) h = h.split(esc(n)).join(`<span class="pii">${esc(n)}</span>`);
+    return h;
+  }
+  function withEmoji(text: string) {
+    return pii(text).replace(EMOJI, (m) => `<span class="emo">${m}</span>`);
+  }
+  function log(html: string) {
+    const t = el('trace');
+    const line = document.createElement('div');
+    line.innerHTML = `<span class="dim">${(clock / 1000).toFixed(1).padStart(5)}s</span> ${html}`;
+    t.appendChild(line);
+    t.scrollTop = t.scrollHeight;
+  }
+  function node(id: string) { return $(`.node[data-stage="${id}"]`); }
+  function out(id: string, html: string, cls = '') {
+    const c = document.createElement('span');
+    c.className = `chip ${cls}`;
+    c.innerHTML = html;
+    $(`[data-out="${id}"]`).appendChild(c);
+  }
+  function setNode(id: string, state: 'active' | 'done' | 'warn') {
+    const n = node(id);
+    n.classList.remove('active', 'flow');
+    if (state === 'active') n.classList.add('active');
+    else n.classList.add(state, 'flow');
+    if (state !== 'active') setTimeout(() => n.classList.remove('flow'), 700);
+  }
+
+  // ---------------------------------------------------------------- the run
+  async function play(c: Case) {
+    const my = ++token;
+    clock = 0;
+    root.querySelectorAll('.node').forEach((n) => n.classList.remove('active', 'done', 'warn', 'flow'));
+    root.querySelectorAll('.node-out').forEach((n) => (n.innerHTML = ''));
+    el('chat').innerHTML = ''; el('trace').innerHTML = ''; el('rows').innerHTML = '';
+    el('empty').style.display = ''; el('verify').className = 'sheet-verify'; el('verify').textContent = 'columns A:L — not checked';
+    el('note').textContent = `${c.title} — ${c.note}`;
+    root.querySelectorAll<HTMLButtonElement>('.ar-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.case === c.id)));
+    const rows = c.events.filter((e) => e.stage === 'row');
+    piiNames = [...new Set(rows.flatMap((r) => [r.cells.recipient, r.cells.sender, r.cells.orderer])
+      .concat(c.events.filter((e) => e.stage === 'extract').flatMap((e) => e.orders.map((o: any) => o.recipient))))];
+    const customer = c.messages[0]?.who;   // whoever opens the thread is the customer; anyone else is just chatting
+    const en = c.events.filter((e) => e.stage === 'extract').flatMap((e) => e.orders.map((o: any) => o.recipient));
+
+    try {
+      // 1. messages arrive
+      log(`<span class="tag">[chat]</span> new LINE messages in the order group`);
+      for (const m of c.messages) {
+        const d = document.createElement('div');
+        d.className = 'msg' + (m.who !== customer ? ' other' : '');
+        d.innerHTML = `<div class="who">${withEmoji(m.who)}</div><div class="bub">${withEmoji(m.text)}</div><div class="t">${m.time}</div>`;
+        el('chat').appendChild(d); el('chat').scrollTop = el('chat').scrollHeight;
+        await wait(650, my);
+      }
+
+      // 2. paste log
+      setNode('paste', 'active');
+      log(`<span class="tag">[paste]</span> owner pastes ${c.messages.length} messages into the review UI`);
+      for (const b of root.querySelectorAll('.msg')) { b.classList.add('read'); await wait(90, my); }
+      out('paste', `${c.messages.length} messages · ${c.messages.map((m) => m.text).join('').length} chars`);
+      setNode('paste', 'done'); await wait(400, my);
+
+      // 3. sanitize
+      const san = c.events.find((e) => e.stage === 'sanitize')!;
+      setNode('sanitize', 'active');
+      root.querySelectorAll('.emo').forEach((e) => e.classList.add('gone'));
+      await wait(700, my);
+      root.querySelectorAll('.emo').forEach((e) => e.remove());
+      root.querySelectorAll('.msg.read').forEach((b) => b.classList.remove('read'));
+      out('sanitize', san.removed ? `removed <b>${san.removed}</b> emoji / zero-width chars` : 'nothing to strip — text passes through', san.removed ? 'ok' : '');
+      log(`<span class="tag">[sanitize]</span> ${san.removed} chars stripped <span class="dim">(keycap digits kept: 1️⃣ → 1)</span>`);
+      setNode('sanitize', 'done'); await wait(450, my);
+
+      // 4. extract
+      const ex = c.events.find((e) => e.stage === 'extract')!;
+      setNode('extract', 'active');
+      log(`<span class="tag">[extract]</span> DSPy ChatLogOrderSignature · one call over the whole conversation…`);
+      await wait(1300, my);
+      for (const o of ex.orders) {
+        out('extract', `<span class="pii">${esc(o.recipient)}</span> · ${o.spec} ×${o.boxes} · ${o.date.slice(5)}`, 'ok');
+        log(`<span class="okc">  + order</span> ${pii(o.recipient)} — ${o.spec} × ${o.boxes}, ships ${o.date}`);
+        await wait(450, my);
+      }
+      setNode('extract', 'done'); await wait(350, my);
+
+      // 5. recall
+      const rc = c.events.find((e) => e.stage === 'recall')!;
+      setNode('recall', 'active'); el('scan').classList.add('on');
+      log(`<span class="tag">[recall]</span> second pass: "which orders did pass one miss?"`);
+      await wait(Math.min(2600, 1200 + (rc.ms || 0) / 4), my);
+      el('scan').classList.remove('on');
+      if (rc.found.length) { out('recall', `+${rc.found.length} missed order recovered`, 'warn'); log(`<span class="wc">  recovered ${rc.found.length} order(s)</span>`); }
+      else { out('recall', `[] — nothing missed ✓ <span class="muted">(the empty list is what this call pays for)</span>`, 'ok'); log(`<span class="okc">  [] nothing missed</span>`); }
+      setNode('recall', 'done'); await wait(400, my);
+
+      // 6. rules: address + options
+      setNode('rules', 'active');
+      for (const e of c.events.filter((x) => x.stage === 'address' || x.stage === 'option')) {
+        if (e.stage === 'address') {
+          if (e.changed) {
+            const diff = [...e.after].map((ch: string, i: number) => (ch !== [...e.before][i] ? `<b>${ch}</b>` : ch)).join('');
+            out('rules', `<span class="diff pii">${diff}</span> <span class="muted">台→臺</span>`, 'ok');
+            log(`<span class="tag">[rules]</span> address normalised: 台 → 臺 (official character)`);
+          } else {
+            out('rules', `address already standard`);
+            log(`<span class="tag">[rules]</span> address already in standard form`);
+          }
+        } else {
+          out('rules', `<code>${esc(e.in)}</code> → ${esc(e.out)}`, 'ok');
+          log(`<span class="tag">[rules]</span> option mapped from code, not the model: ${esc(e.out)}`);
+        }
+        await wait(600, my);
+      }
+      setNode('rules', 'done'); await wait(300, my);
+
+      // 7. dedup
+      setNode('dedup', 'active');
+      for (const e of c.events.filter((x) => x.stage === 'dedup')) {
+        out('dedup', `<code class="pii">${esc(e.key)}</code> → <span class="st review">${e.status}</span>`);
+        log(`<span class="tag">[dedup]</span> key ${pii(e.key)} · new · status <span class="wc">${e.status}</span>`);
+        await wait(500, my);
+      }
+      setNode('dedup', 'warn'); await wait(300, my);
+
+      // 8. human gate
+      setNode('gate', 'active');
+      for (const r of rows) {
+        out('gate', `⚠ ${r.problems.map(esc).join(' · ')}`, 'warn');
+        log(`<span class="wc">[gate]</span> flagged for review: ${r.problems.map(esc).join('; ')}`);
+        await wait(700, my);
+      }
+      out('gate', `☑ owner reviewed ${rows.length} row(s) and approved`, 'ok');
+      log(`<span class="okc">[gate]</span> owner approves ${rows.length} row(s)`);
+      setNode('gate', 'done'); await wait(450, my);
+
+      // 9. write sheet
+      setNode('write', 'active');
+      el('verify').textContent = 'reading header row A1:L1…'; await wait(700, my);
+      el('verify').textContent = '✓ columns A:L match the expected 12-column schema'; el('verify').className = 'sheet-verify ok';
+      log(`<span class="tag">[write]</span> verify_columns() → ok`);
+      el('empty').style.display = 'none';
+      for (const r of rows) {
+        const tr = document.createElement('tr'); tr.className = 'new';
+        const cells = [r.cells.recipient, r.cells.phone, r.cells.address, r.cells.item, r.cells.date];
+        const ri = rows.indexOf(r);
+        tr.innerHTML = cells.map(() => '<td></td>').join('') + `<td><span class="st approved">approved</span></td>`;
+        el('rows').appendChild(tr);
+        const tds = tr.querySelectorAll('td');
+        for (let i = 0; i < cells.length; i++) {
+          tds[i].classList.add('typing');
+          await wait(220, my);
+          tds[i].classList.remove('typing');
+          tds[i].innerHTML = i === 3 || i === 4 ? esc(cells[i])
+            : i === 0 ? `<span class="pii">${esc(cells[0])}</span><br><span class="pii muted">${esc(en[ri] ?? '')}</span>`
+            : `<span class="pii">${esc(cells[i])}</span>`;
+        }
+        log(`<span class="okc">  row appended</span> ${pii(r.cells.recipient)} · ${esc(r.cells.item)}`);
+        await wait(300, my);
+      }
+      out('write', `${rows.length} row(s) written · date tab ${rows[0]?.cells.date ?? ''} rebuilt`, 'ok');
+      setNode('write', 'done');
+      log(`<span class="okc">[done]</span> ${rows.length} order(s) in the sheet · one Langfuse trace session per order`);
+      await wait(4500, my);
+      // loop to the other case
+      const next = cases[(cases.indexOf(c) + 1) % cases.length];
+      play(next);
+    } catch { /* cancelled by restart / case switch */ }
+  }
+
+  // ---------------------------------------------------------------- controls
+  let current = cases[0];
+  root.querySelectorAll<HTMLButtonElement>('.ar-tab').forEach((b) =>
+    b.addEventListener('click', () => { current = cases.find((c) => c.id === b.dataset.case)!; paused = false; syncPlay(); play(current); }));
+  const playBtn = $<HTMLButtonElement>('[data-act="play"]');
+  const syncPlay = () => (playBtn.textContent = paused ? '▶ Play' : '⏸ Pause');
+  playBtn.addEventListener('click', () => { paused = !paused; syncPlay(); });
+  $('[data-act="restart"]').addEventListener('click', () => { paused = false; syncPlay(); play(current); });
+  const speedBtn = $<HTMLButtonElement>('[data-act="speed"]');
+  speedBtn.addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; speedBtn.textContent = `${speed}×`; });
+  $<HTMLInputElement>('[data-act="mask"]').addEventListener('change', (e) => root.classList.toggle('masked', (e.target as HTMLInputElement).checked));
+
+  // start when scrolled into view (and pause when the tab is hidden)
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) { io.disconnect(); play(current); }
+  }, { threshold: 0.2 });
+  io.observe(root);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { paused = true; syncPlay(); } });
+</script>

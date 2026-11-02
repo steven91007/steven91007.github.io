@@ -1,8 +1,9 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AgentRun from '../../components/AgentRun.astro';
 const stack = ['Python', 'DSPy', 'LLM extraction', 'Google Sheets API', 'Langfuse tracing', 'LINE Messaging API'];
 ---
-<Base title="LINE Order Extraction Agent — Chi-Yi Hsu"
+<Base wide title="LINE Order Extraction Agent — Chi-Yi Hsu"
       description="An LLM agent that turns a messy LINE group chat into clean, verified gift-box orders.">
   <p class="muted"><a href="/projects/">Projects</a> · Side project · 2025–2026</p>
   <h1>LINE Order Extraction Agent</h1>
@@ -13,8 +14,11 @@ const stack = ['Python', 'DSPy', 'LLM extraction', 'Google Sheets API', 'Langfus
     placed, and writes clean rows to Google Sheets, grouped by ship date.
   </p>
 
-  <p><a href="/demos/line-order-agent/"><strong>Open the interactive demo →</strong></a>
-     <span class="muted">(replays a real pipeline run on sample data; sensitive fields can be masked)</span></p>
+  <h2>Watch it run</h2>
+  <p class="muted">A replay of a real recorded run on sample data — every value below is what the pipeline produced.</p>
+  <AgentRun />
+  <p><a href="/demos/line-order-agent/">Step through the full run with code →</a>
+     <span class="muted">(every stage's input/output and the code behind it)</span></p>
 
   <h2>How it works</h2>
   <ol>
