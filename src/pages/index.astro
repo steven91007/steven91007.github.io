@@ -5,7 +5,7 @@ import TechStack from '../components/TechStack.astro';
 import TechTag from '../components/TechTag.astro';
 const stats = [
   { n: '6 yrs', l: 'industry AI engineering' },
-  { n: '200+', l: 'engineers use my QA document AI' },
+  { n: '200+', l: 'engineers use Amo’s QA document AI' },
   { n: '30 → 5 min', l: 'review time per QA document' },
   { n: '89.5 → 99%', l: 'agent delivery-status accuracy' },
 ];
@@ -21,15 +21,15 @@ const featured = work.slice(0, 3);
   <section class="hero">
     <div class="avatar-wrap">
       <img class="avatar" src="/home-photo.jpg" width="640" height="800" alt="Portrait of Chi-Yi (Amo) Hsu" />
-      <span class="status"><span class="pulse"></span>open to roles in Germany</span>
     </div>
     <div>
       <p class="eyebrow">Senior AI Engineer · LLM agents · Evaluation · MLOps</p>
-      <h1>Hi, I'm Chi-Yi (Amo) Hsu.<br /><span class="grad">I build AI systems people rely on every day.</span></h1>
+      <h1>Chi-Yi (Amo) Hsu<br /><span class="grad">builds AI systems people rely on every day.</span></h1>
       <p class="lead">
-        Six years taking LLM agents, document AI and computer-vision models from first prototype to production —
-        and owning them afterwards through maintenance and incident response. My users are engineers and buyers
-        at Delta Electronics in Germany, the Netherlands and Asia.
+        Amo is a Senior AI Engineer at Delta Electronics with six years of industry experience. Amo takes LLM agents,
+        document AI and computer-vision models from first prototype to production — and keeps owning them afterwards,
+        through maintenance and incident response. The people who use these systems are engineers and procurement staff
+        in Germany, the Netherlands and Asia.
       </p>
       <div class="cta">
         <a class="btn primary" href="/projects/">View projects →</a>
@@ -44,10 +44,10 @@ const featured = work.slice(0, 3);
   </section>
 
   <h2>Tech stack</h2>
-  <p class="eyebrow">tools I use in production</p>
+  <p class="eyebrow">tools in daily production use</p>
   <TechStack />
 
-  <h2>What I work on</h2>
+  <h2>What Amo works on</h2>
   <p class="eyebrow">focus areas</p>
   <div class="cards">
     {focus.map((f) => <div class="card hover"><span class="k mono">{f.k}</span><h3>{f.t}</h3><p>{f.d}</p></div>)}
@@ -86,9 +86,6 @@ const featured = work.slice(0, 3);
   .avatar { width: 240px; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 18px; padding: 3px;
             background: linear-gradient(140deg, var(--accent), var(--accent-2) 55%, var(--ok));
             box-shadow: 0 20px 60px -18px rgba(56,189,248,.55); }
-  .status { font-family: var(--mono); font-size: .72rem; color: var(--ok); border: 1px solid rgba(52,211,153,.3);
-            background: rgba(52,211,153,.07); border-radius: 999px; padding: 3px 10px; display: flex; gap: 7px; align-items: center; white-space: nowrap; }
-  .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(52,211,153,.6); animation: ring 2s infinite; }
   .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 44px; border: 1px solid var(--line);
            border-radius: 14px; overflow: hidden; background: var(--line); }
@@ -101,7 +98,6 @@ const featured = work.slice(0, 3);
   .feature { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 18px;
              background: linear-gradient(120deg, rgba(56,189,248,.09), rgba(167,139,250,.08)), var(--card); }
   .go { color: var(--accent); white-space: nowrap; font-size: .9rem; }
-  @keyframes ring { 70% { box-shadow: 0 0 0 8px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
   @media (max-width: 760px) {
     .hero { grid-template-columns: 1fr; gap: 22px; text-align: left; }
     .avatar-wrap { align-items: flex-start; }
