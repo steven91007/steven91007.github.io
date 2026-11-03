@@ -190,7 +190,7 @@ const stages = [
   el('model').textContent = `model: ${(run as any).model}`;
 
   const EMOJI = /(\p{Extended_Pictographic}|⃣|️)/gu;
-  const PHONE = /09\d{8}/g;
+  const PHONE = /0\d{10}/g;   // sample German mobile numbers
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
   let speed = 1, paused = false, token = 0, clock = 0, piiNames: string[] = [];
@@ -250,7 +250,6 @@ const stages = [
     piiNames = [...new Set(rows.flatMap((r) => [r.cells.recipient, r.cells.sender, r.cells.orderer])
       .concat(c.events.filter((e) => e.stage === 'extract').flatMap((e) => e.orders.map((o: any) => o.recipient))))];
     const customer = c.messages[0]?.who;   // whoever opens the thread is the customer; anyone else is just chatting
-    const en = c.events.filter((e) => e.stage === 'extract').flatMap((e) => e.orders.map((o: any) => o.recipient));
 
     try {
       // 1. messages arrive
@@ -308,9 +307,13 @@ const stages = [
       for (const e of c.events.filter((x) => x.stage === 'address' || x.stage === 'option')) {
         if (e.stage === 'address') {
           if (e.changed) {
-            const diff = [...e.after].map((ch: string, i: number) => (ch !== [...e.before][i] ? `<b>${ch}</b>` : ch)).join('');
-            out('rules', `<span class="diff pii">${diff}</span> <span class="muted">台→臺</span>`, 'ok');
-            log(`<span class="tag">[rules]</span> address normalised: 台 → 臺 (official character)`);
+            // highlight what changed: common prefix and suffix stay plain
+            const a: string = e.before, b: string = e.after;
+            let p = 0; while (p < a.length && a[p] === b[p]) p++;
+            let s = 0; while (s < a.length - p && s < b.length - p && a[a.length - 1 - s] === b[b.length - 1 - s]) s++;
+            const diff = `${esc(b.slice(0, p))}<b>${esc(b.slice(p, b.length - s))}</b>${esc(b.slice(b.length - s))}`;
+            out('rules', `<span class="diff pii">${diff}</span>`, 'ok');
+            log(`<span class="tag">[rules]</span> address normalised: ${esc(e.note)}`);
           } else {
             out('rules', `address already standard`);
             log(`<span class="tag">[rules]</span> address already in standard form`);
@@ -352,7 +355,6 @@ const stages = [
       for (const r of rows) {
         const tr = document.createElement('tr'); tr.className = 'new';
         const cells = [r.cells.recipient, r.cells.phone, r.cells.address, r.cells.item, r.cells.date];
-        const ri = rows.indexOf(r);
         tr.innerHTML = cells.map(() => '<td></td>').join('') + `<td><span class="st approved">approved</span></td>`;
         el('rows').appendChild(tr);
         const tds = tr.querySelectorAll('td');
@@ -361,7 +363,6 @@ const stages = [
           await wait(220, my);
           tds[i].classList.remove('typing');
           tds[i].innerHTML = i === 3 || i === 4 ? esc(cells[i])
-            : i === 0 ? `<span class="pii">${esc(cells[0])}</span><br><span class="pii muted">${esc(en[ri] ?? '')}</span>`
             : `<span class="pii">${esc(cells[i])}</span>`;
         }
         log(`<span class="okc">  row appended</span> ${pii(r.cells.recipient)} · ${esc(r.cells.item)}`);
