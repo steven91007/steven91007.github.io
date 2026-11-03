@@ -1,7 +1,8 @@
 ---
 import Base from '../../layouts/Base.astro';
 import AgentRun from '../../components/AgentRun.astro';
-const stack = ['Python', 'DSPy', 'LLM extraction', 'Google Sheets API', 'Langfuse tracing', 'LINE Messaging API'];
+import TechTag from '../../components/TechTag.astro';
+const stack = ['Python', 'DSPy', 'OpenAI', 'Flask', 'Langfuse', 'Google Sheets API', 'LINE Messaging API', 'Discord', 'PyTest', 'uv'];
 ---
 <Base wide title="LINE Order Extraction Agent — Chi-Yi Hsu"
       description="An LLM agent that turns a messy LINE group chat into clean, verified gift-box orders.">
@@ -16,10 +17,9 @@ const stack = ['Python', 'DSPy', 'LLM extraction', 'Google Sheets API', 'Langfus
 
   <h2>Watch it run</h2>
   <p class="muted">A replay of a recorded pipeline run. Customer names, phone numbers and addresses are fictional
-     (Berlin examples); the stages and what each one decided are from the real run.</p>
+     Berlin examples and partly masked; prices are shown in euros. The stages and what each one decided are from the real run.</p>
   <AgentRun />
-  <p><a href="/demos/line-order-agent/">Step through the full run with code →</a>
-     <span class="muted">(every stage's input/output and the code behind it)</span></p>
+
 
   <h2>How it works</h2>
   <ol>
@@ -48,6 +48,6 @@ const stack = ['Python', 'DSPy', 'LLM extraction', 'Google Sheets API', 'Langfus
     packing summary and an auto-learning loop are designed but not finished. The demo lists these openly.
   </p>
 
-  <div class="tags">{stack.map((s) => <span>{s}</span>)}</div>
+  <div class="tags">{stack.map((s) => <TechTag name={s} size="chip" />)}</div>
   <p style="margin-top:24px"><a href="https://github.com/steven91007/lineorderllm">Source on GitHub</a></p>
 </Base>

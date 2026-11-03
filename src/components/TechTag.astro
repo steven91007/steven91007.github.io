@@ -1,0 +1,43 @@
+---
+// A tool name with its brand icon. size="tile" for the stack grid, default is an inline tag.
+import { tech, isTool } from '../data/tech';
+interface Props { name: string; size?: 'tag' | 'chip' | 'tile' }
+const { name, size = 'tag' } = Astro.props;
+const t = tech(name);
+---
+<span class:list={['tt', size]} style={`--c:${t.color}`} title={name}>
+  {t.svg ? <span class="ic" set:html={t.svg} /> : (size === 'tile' || isTool(name)) && <span class="ic mono-ic">{t.mono}</span>}
+  <span class="lb">{name}</span>
+</span>
+
+<style>
+  .tt { display: inline-flex; align-items: center; gap: 7px; color: var(--fg); }
+  .ic { display: inline-grid; place-items: center; flex: none; }
+  .ic :global(svg) { width: 100%; height: 100%; fill: var(--c); }
+  .mono-ic { font-family: var(--mono); font-weight: 600; color: var(--c); border: 1.5px solid var(--c); border-radius: 5px; line-height: 1; }
+
+  /* inline tag */
+  .tag { font-family: var(--mono); font-size: .72rem; border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px 2px 6px;
+         color: var(--muted); background: rgba(255,255,255,.02); }
+  .tag .ic { width: 13px; height: 13px; }
+  .tag .mono-ic { font-size: .5rem; border-width: 1px; border-radius: 3px; }
+
+  /* chip: project "built with" row */
+  .chip { font-size: .8rem; font-weight: 500; border: 1px solid color-mix(in srgb, var(--c) 35%, var(--line)); border-radius: 8px;
+          padding: 4px 10px 4px 8px; background: color-mix(in srgb, var(--c) 9%, transparent); transition: border-color .2s, transform .2s; }
+  .chip .ic { width: 16px; height: 16px; }
+  .chip .mono-ic { font-size: .5rem; border-width: 1.5px; border-radius: 4px; padding: 0 1px; min-width: 16px; }
+  .chip:hover { border-color: var(--c); transform: translateY(-1px); }
+
+  /* grid tile */
+  .tile { flex-direction: column; justify-content: center; gap: 10px; padding: 16px 8px 12px; border-radius: 12px;
+          border: 1px solid var(--line); background: var(--card); text-align: center; min-height: 104px;
+          transition: transform .2s, border-color .2s, box-shadow .2s; }
+  .tile .ic { width: 38px; height: 38px; transition: transform .25s; }
+  .tile .mono-ic { font-size: .9rem; border-width: 2px; border-radius: 8px; }
+  .tile .lb { font-size: .78rem; color: var(--muted); line-height: 1.25; }
+  .tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 55%, transparent);
+                box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--c) 70%, transparent); }
+  .tile:hover .ic { transform: scale(1.1); }
+  .tile:hover .lb { color: var(--fg); }
+</style>

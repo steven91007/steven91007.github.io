@@ -1,0 +1,19 @@
+---
+// Grouped grid of tool icons (see src/data/tech.ts).
+import TechTag from './TechTag.astro';
+import { stack } from '../data/tech';
+---
+<div class="stack">
+  {stack.map((g) => (
+    <div class="grp">
+      <div class="grp-h">{g.group}</div>
+      <div class="tiles">{g.tools.map((t) => <TechTag name={t} size="tile" />)}</div>
+    </div>
+  ))}
+</div>
+
+<style>
+  .stack { display: grid; gap: 22px; margin-top: 18px; }
+  .grp-h { font-family: var(--mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+</style>

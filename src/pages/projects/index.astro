@@ -1,27 +1,77 @@
 ---
 import Base from '../../layouts/Base.astro';
-// Case studies live in src/pages/projects/<slug>.astro. Add one here once its content is cleared for publication.
-const projects: { href: string; title: string; summary: string; tags: string[] }[] = [
+import { work } from '../../data/profile';
+import TechTag from '../../components/TechTag.astro';
+// Side projects with their own case-study page live in src/pages/projects/<slug>.astro.
+const side = [
   {
     href: '/projects/line-order-agent/',
     title: 'LINE Order Extraction Agent',
-    summary: 'Turns a messy LINE group chat into verified gift-box orders in Google Sheets — with an interactive demo.',
-    tags: ['LLM agent', 'DSPy', 'Langfuse', 'Side project'],
+    summary: 'Turns a messy LINE group chat into verified gift-box orders in Google Sheets — with an animated pipeline replay.',
+    tags: ['Python', 'DSPy', 'OpenAI', 'Flask', 'Langfuse', 'Google Sheets API', 'LINE Messaging API', 'Discord', 'PyTest', 'uv'],
   },
 ];
 ---
 <Base title="Projects — Chi-Yi Hsu">
-  <h1>Projects</h1>
-  {projects.length === 0 ? (
-    <p class="muted">Case studies and live demos are being prepared and will appear here soon.</p>
-  ) : (
-    <div class="cards">
-      {projects.map((p) => (
-        <a class="card" href={p.href} style="text-decoration:none;color:inherit">
-          <h3>{p.title}</h3><p>{p.summary}</p>
-          <div class="tags">{p.tags.map((t) => <span>{t}</span>)}</div>
-        </a>
-      ))}
-    </div>
-  )}
+  <p class="eyebrow">projects</p>
+  <h1>Things I've built and run in production</h1>
+  <p class="lead">Production systems at Delta Electronics, described at the level I can share publicly — no internal code or data.
+     Side projects come with source code and a live demo.</p>
+
+  <h2>Side projects</h2>
+  <div class="cards">
+    {side.map((p) => (
+      <a class="card side" href={p.href}>
+        <span class="live mono">● live demo</span>
+        <h3>{p.title}</h3><p>{p.summary}</p>
+        <div class="built"><span class="built-h mono">built with</span>{p.tags.map((t) => <TechTag name={t} size="chip" />)}</div>
+      </a>
+    ))}
+  </div>
+
+  <h2>Production work</h2>
+  <p class="eyebrow">Delta Electronics · 2022 – present</p>
+  <div class="work">
+    {work.map((w, i) => (
+      <article class="card w">
+        <div class="w-head">
+          <span class="idx mono">{String(i + 1).padStart(2, '0')}</span>
+          <div class="w-title">
+            <h3>{w.title}</h3>
+            <span class="meta mono">{w.period} · <span class="st">{w.status}</span></span>
+          </div>
+        </div>
+        <p class="ctx">{w.context}</p>
+        <p class="val">{w.value}</p>
+        <div class="tags">{w.metrics.map((m) => <span class="metric">▲ {m}</span>)}</div>
+        <div class="built"><span class="built-h mono">built with</span>{w.stack.map((s) => <TechTag name={s} size="chip" />)}</div>
+        <div class="tags">{w.methods.map((m) => <span>{m}</span>)}</div>
+      </article>
+    ))}
+  </div>
+
+  <h2>Earlier</h2>
+  <p class="eyebrow">Mirle Automation · 2021 – 2022</p>
+  <div class="card w" style="margin-top:18px">
+    <h3>OCR & invoice-automation computer vision</h3>
+    <p class="ctx">Owned an OCR pipeline from data annotation and model training to production integration, and deployed a
+       full-stack computer-vision application for invoice data extraction and workflow automation.</p>
+    <div class="tags"><span class="metric">▲ OCR accuracy ~70% → 95%+</span><span class="metric">▲ 80% shorter invoice processing</span></div>
+  </div>
 </Base>
+
+<style>
+  .side { background: linear-gradient(120deg, rgba(56,189,248,.09), rgba(167,139,250,.08)), var(--card); }
+  .live { font-size: .72rem; color: var(--ok); }
+  .side h3 { margin-top: 6px; }
+  .work { display: grid; gap: 16px; margin-top: 18px; }
+  .w-head { display: flex; gap: 14px; align-items: flex-start; }
+  .idx { color: var(--accent); font-size: .85rem; padding-top: 3px; }
+  .w-title h3 { margin: 0; font-size: 1.12rem; }
+  .meta { font-size: .74rem; color: var(--muted); }
+  .st { color: var(--ok); }
+  .w .ctx { color: var(--fg); margin-top: 10px; }
+  .w .val { margin-top: 8px; }
+  .built { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .built-h { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 4px; }
+</style>

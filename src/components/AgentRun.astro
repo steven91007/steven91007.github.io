@@ -22,7 +22,6 @@ const stages = [
       <button class="ar-btn" data-act="play" aria-label="Play or pause">⏸ Pause</button>
       <button class="ar-btn" data-act="restart" aria-label="Restart">↺ Restart</button>
       <button class="ar-btn" data-act="speed" aria-label="Playback speed">1×</button>
-      <label class="ar-mask"><input type="checkbox" data-act="mask" /> Mask PII</label>
     </div>
   </div>
   <p class="ar-note" data-el="note"></p>
@@ -58,11 +57,11 @@ const stages = [
 
     <!-- sheet -->
     <div class="ar-col">
-      <div class="ar-h">Google Sheet <span>form responses</span></div>
+      <div class="ar-h">Google Sheet <span>order form · A:L</span></div>
       <div class="sheet">
         <div class="sheet-verify" data-el="verify">columns A:L — not checked</div>
         <table>
-          <thead><tr><th>Recipient</th><th>Phone</th><th>Address</th><th>Item</th><th>Date</th><th>Status</th></tr></thead>
+          <thead><tr data-el="head"></tr></thead>
           <tbody data-el="rows"></tbody>
         </table>
         <div class="sheet-empty" data-el="empty">rows appear here after the human gate</div>
@@ -83,7 +82,6 @@ const stages = [
                      border-radius: 999px; padding: 4px 12px; cursor: pointer; }
   .ar-tab[aria-selected='true'] { border-color: var(--ac); color: var(--ac); font-weight: 600; }
   .ar-btn:hover, .ar-tab:hover { border-color: var(--ac); }
-  .ar-mask { font-size: .85rem; color: var(--muted); display: flex; gap: 4px; align-items: center; }
   .ar-note { color: var(--muted); font-size: .9rem; margin: 8px 2px 10px; min-height: 1.3em; }
   .ar-grid { display: grid; grid-template-columns: .95fr 1fr 1.35fr; gap: 14px; }
   .ar-col { min-width: 0; }
@@ -141,10 +139,10 @@ const stages = [
   /* sheet */
   .sheet { border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; background: var(--bg); position: relative; }
   .sheet table { width: 100%; border-collapse: collapse; font-size: .7rem; }
-  .sheet th:nth-child(2), .sheet td:nth-child(2) { display: none; }   /* phone: in the dedup key already */
-  .sheet th { background: #e8f0e8; color: #2f5e36; text-align: left; padding: 5px 6px; font-weight: 650; white-space: nowrap; }
-  @media (prefers-color-scheme: dark) { .sheet th { background: #1f3324; color: #9bd3a4; } }
-  .sheet td { border-top: 1px solid var(--line); padding: 5px 6px; vertical-align: top; }
+  .sheet th { background: #1f3324; color: #9bd3a4; text-align: left; padding: 5px 6px; font-weight: 650; white-space: nowrap; }
+  .sheet td { border-top: 1px solid var(--line); padding: 5px 6px; vertical-align: top; white-space: nowrap; }
+  .sheet th .col { color: var(--muted); font-weight: 400; margin-right: 3px; }
+  .sheet td.empty-cell { color: var(--muted); }
   .sheet tr.new td { animation: rowIn .6s ease-out both; }
   .sheet td.typing::after { content: '▍'; color: var(--ac); animation: blink .7s steps(1) infinite; }
   .sheet-verify { font-size: .72rem; padding: 5px 8px; color: var(--muted); border-bottom: 1px solid var(--line); }
@@ -162,9 +160,6 @@ const stages = [
   .trace .okc { color: #4ade80; }
   .trace .wc { color: #fbbf24; }
   .trace .dim { color: #7b8794; }
-
-  .pii { transition: filter .3s; }
-  .masked .pii { filter: blur(5px); }
 
   @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -190,10 +185,14 @@ const stages = [
   el('model').textContent = `model: ${(run as any).model}`;
 
   const EMOJI = /(\p{Extended_Pictographic}|⃣|️)/gu;
-  const PHONE = /0\d{10}/g;   // sample German mobile numbers
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
-  let speed = 1, paused = false, token = 0, clock = 0, piiNames: string[] = [];
+  let speed = 1, paused = false, token = 0, clock = 0;
+
+  // sheet header: the real 12 form columns A:L, plus the review status
+  const COLS: string[] = (run as any).columns;
+  el('head').innerHTML = COLS.map((c, i) => `<th><span class="col">${String.fromCharCode(65 + i)}</span>${c}</th>`).join('') + '<th>Status</th>';
+  const C = (name: string) => COLS.indexOf(name);
 
   // ---------------------------------------------------------------- timing
   async function wait(ms: number, my: number) {
@@ -206,11 +205,7 @@ const stages = [
   }
 
   // ---------------------------------------------------------------- rendering helpers
-  function pii(text: string) {
-    let h = esc(text).replace(PHONE, (m) => `<span class="pii">${m}</span>`);
-    for (const n of piiNames) if (n) h = h.split(esc(n)).join(`<span class="pii">${esc(n)}</span>`);
-    return h;
-  }
+  const pii = (text: string) => esc(text ?? '');   // names/phones are already masked (XXXX) in the data
   function withEmoji(text: string) {
     return pii(text).replace(EMOJI, (m) => `<span class="emo">${m}</span>`);
   }
@@ -247,8 +242,6 @@ const stages = [
     el('note').textContent = `${c.title} — ${c.note}`;
     root.querySelectorAll<HTMLButtonElement>('.ar-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.case === c.id)));
     const rows = c.events.filter((e) => e.stage === 'row');
-    piiNames = [...new Set(rows.flatMap((r) => [r.cells.recipient, r.cells.sender, r.cells.orderer])
-      .concat(c.events.filter((e) => e.stage === 'extract').flatMap((e) => e.orders.map((o: any) => o.recipient))))];
     const customer = c.messages[0]?.who;   // whoever opens the thread is the customer; anyone else is just chatting
 
     try {
@@ -286,7 +279,7 @@ const stages = [
       log(`<span class="tag">[extract]</span> DSPy ChatLogOrderSignature · one call over the whole conversation…`);
       await wait(1300, my);
       for (const o of ex.orders) {
-        out('extract', `<span class="pii">${esc(o.recipient)}</span> · ${o.spec} ×${o.boxes} · ${o.date.slice(5)}`, 'ok');
+        out('extract', `${esc(o.recipient)} · ${o.spec} ×${o.boxes} · ${o.date.slice(5)}`, 'ok');
         log(`<span class="okc">  + order</span> ${pii(o.recipient)} — ${o.spec} × ${o.boxes}, ships ${o.date}`);
         await wait(450, my);
       }
@@ -312,7 +305,7 @@ const stages = [
             let p = 0; while (p < a.length && a[p] === b[p]) p++;
             let s = 0; while (s < a.length - p && s < b.length - p && a[a.length - 1 - s] === b[b.length - 1 - s]) s++;
             const diff = `${esc(b.slice(0, p))}<b>${esc(b.slice(p, b.length - s))}</b>${esc(b.slice(b.length - s))}`;
-            out('rules', `<span class="diff pii">${diff}</span>`, 'ok');
+            out('rules', `<span class="diff">${diff}</span>`, 'ok');
             log(`<span class="tag">[rules]</span> address normalised: ${esc(e.note)}`);
           } else {
             out('rules', `address already standard`);
@@ -329,7 +322,7 @@ const stages = [
       // 7. dedup
       setNode('dedup', 'active');
       for (const e of c.events.filter((x) => x.stage === 'dedup')) {
-        out('dedup', `<code class="pii">${esc(e.key)}</code> → <span class="st review">${e.status}</span>`);
+        out('dedup', `<code>${esc(e.key)}</code> → <span class="st review">${e.status}</span>`);
         log(`<span class="tag">[dedup]</span> key ${pii(e.key)} · new · status <span class="wc">${e.status}</span>`);
         await wait(500, my);
       }
@@ -352,23 +345,29 @@ const stages = [
       el('verify').textContent = '✓ columns A:L match the expected 12-column schema'; el('verify').className = 'sheet-verify ok';
       log(`<span class="tag">[write]</span> verify_columns() → ok`);
       el('empty').style.display = 'none';
+      const sheet = $('.sheet');
       for (const r of rows) {
+        const cells: string[] = r.cells;
         const tr = document.createElement('tr'); tr.className = 'new';
-        const cells = [r.cells.recipient, r.cells.phone, r.cells.address, r.cells.item, r.cells.date];
-        tr.innerHTML = cells.map(() => '<td></td>').join('') + `<td><span class="st approved">approved</span></td>`;
+        tr.innerHTML = cells.map(() => '<td></td>').join('') + `<td><span class="st review">review</span></td>`;
         el('rows').appendChild(tr);
-        const tds = tr.querySelectorAll('td');
+        const tds = tr.querySelectorAll<HTMLElement>('td');
+        sheet.scrollLeft = 0;
         for (let i = 0; i < cells.length; i++) {
           tds[i].classList.add('typing');
-          await wait(220, my);
+          // follow the cursor across the form like an auto-fill
+          sheet.scrollLeft = Math.max(0, tds[i].offsetLeft - sheet.clientWidth / 2);
+          await wait(cells[i] ? 200 : 90, my);
           tds[i].classList.remove('typing');
-          tds[i].innerHTML = i === 3 || i === 4 ? esc(cells[i])
-            : `<span class="pii">${esc(cells[i])}</span>`;
+          if (cells[i]) tds[i].textContent = cells[i];
+          else { tds[i].textContent = '—'; tds[i].classList.add('empty-cell'); }
         }
-        log(`<span class="okc">  row appended</span> ${pii(r.cells.recipient)} · ${esc(r.cells.item)}`);
-        await wait(300, my);
+        tds[cells.length].innerHTML = `<span class="st approved">approved</span>`;
+        log(`<span class="okc">  row appended</span> ${pii(cells[C('Recipient')])} · ${esc(cells[C('Gift box item')])}`);
+        await wait(400, my);
       }
-      out('write', `${rows.length} row(s) written · date tab ${rows[0]?.cells.date ?? ''} rebuilt`, 'ok');
+      sheet.scrollLeft = 0;
+      out('write', `${rows.length} row(s) written · date tab ${rows[0]?.cells[C('Delivery date')] ?? ''} rebuilt`, 'ok');
       setNode('write', 'done');
       log(`<span class="okc">[done]</span> ${rows.length} order(s) in the sheet · one Langfuse trace session per order`);
       await wait(4500, my);
@@ -388,7 +387,6 @@ const stages = [
   $('[data-act="restart"]').addEventListener('click', () => { paused = false; syncPlay(); play(current); });
   const speedBtn = $<HTMLButtonElement>('[data-act="speed"]');
   speedBtn.addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; speedBtn.textContent = `${speed}×`; });
-  $<HTMLInputElement>('[data-act="mask"]').addEventListener('change', (e) => root.classList.toggle('masked', (e.target as HTMLInputElement).checked));
 
   // start when scrolled into view (and pause when the tab is hidden)
   const io = new IntersectionObserver((entries) => {

@@ -1,30 +1,112 @@
 ---
 import Base from '../layouts/Base.astro';
-const focus = [
-  { t: 'LLM agents', d: 'Multi-step agents with tool calling, rules kept in code, and human review where a person must decide.' },
-  { t: 'Evaluation', d: 'Labelled test sets, regression replay and release checks for non-deterministic systems.' },
-  { t: 'MLOps & delivery', d: 'Containerised Python services, CI/CD with approval-gated releases, on-prem deployment.' },
-  { t: 'Computer vision & document AI', d: 'Detection, OCR and multimodal extraction, from data labelling to production.' },
+import { work } from '../data/profile';
+import TechStack from '../components/TechStack.astro';
+import TechTag from '../components/TechTag.astro';
+const stats = [
+  { n: '6 yrs', l: 'industry AI engineering' },
+  { n: '200+', l: 'engineers use my QA document AI' },
+  { n: '30 → 5 min', l: 'review time per QA document' },
+  { n: '89.5 → 99%', l: 'agent delivery-status accuracy' },
 ];
+const focus = [
+  { k: '01', t: 'LLM agents', d: 'Multi-step agents with tool calling, business rules kept in code, and human review where a person must decide.' },
+  { k: '02', t: 'Evaluation', d: 'Labelled test sets, regression replay and release checks for non-deterministic systems.' },
+  { k: '03', t: 'MLOps & delivery', d: 'Containerised Python services, CI/CD with approval-gated releases, on-prem and air-gapped deployment.' },
+  { k: '04', t: 'Vision & document AI', d: 'Detection, OCR and VLM-based extraction, from data labelling to production.' },
+];
+const featured = work.slice(0, 3);
 ---
 <Base title="Chi-Yi (Amo) Hsu — AI Engineer">
-  <p class="muted">Senior AI Engineer · based in Germany</p>
-  <h1>I build AI systems that people rely on in daily work.</h1>
-  <p>
-    Six years of industry experience taking LLM agents, evaluation pipelines and computer-vision models
-    from first prototype to production — and owning them afterwards through maintenance and incident response.
-  </p>
+  <section class="hero">
+    <div class="avatar-wrap">
+      <img class="avatar" src="/home-photo.jpg" width="640" height="800" alt="Portrait of Chi-Yi (Amo) Hsu" />
+      <span class="status"><span class="pulse"></span>open to roles in Germany</span>
+    </div>
+    <div>
+      <p class="eyebrow">Senior AI Engineer · LLM agents · Evaluation · MLOps</p>
+      <h1>Hi, I'm Chi-Yi (Amo) Hsu.<br /><span class="grad">I build AI systems people rely on every day.</span></h1>
+      <p class="lead">
+        Six years taking LLM agents, document AI and computer-vision models from first prototype to production —
+        and owning them afterwards through maintenance and incident response. My users are engineers and buyers
+        at Delta Electronics in Germany, the Netherlands and Asia.
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="/projects/">View projects →</a>
+        <a class="btn" href="https://linkedin.com/in/chi-yi-hsu">LinkedIn</a>
+        <a class="btn" href="https://github.com/steven91007">GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    {stats.map((s) => <div class="stat"><div class="stat-n">{s.n}</div><div class="stat-l">{s.l}</div></div>)}
+  </section>
+
+  <h2>Tech stack</h2>
+  <p class="eyebrow">tools I use in production</p>
+  <TechStack />
 
   <h2>What I work on</h2>
+  <p class="eyebrow">focus areas</p>
   <div class="cards">
-    {focus.map((f) => <div class="card"><h3>{f.t}</h3><p>{f.d}</p></div>)}
+    {focus.map((f) => <div class="card hover"><span class="k mono">{f.k}</span><h3>{f.t}</h3><p>{f.d}</p></div>)}
   </div>
 
-  <h2>Featured project</h2>
-  <a class="card" href="/projects/line-order-agent/" style="display:block;text-decoration:none;color:inherit;margin-top:16px">
-    <h3>LINE Order Extraction Agent</h3>
-    <p>An LLM agent that reads a raw LINE group chat and writes every real order to Google Sheets — two-pass
-       extraction, verified writes, traced end to end. Includes an interactive demo.</p>
+  <h2>Selected production work</h2>
+  <p class="eyebrow">live systems at Delta Electronics</p>
+  <div class="cards">
+    {featured.map((w) => (
+      <a class="card" href="/projects/">
+        <h3>{w.title}</h3>
+        <p>{w.context}</p>
+        <div class="tags">{w.metrics.slice(0, 2).map((m) => <span class="metric">▲ {m}</span>)}</div>
+        <div class="tags">{w.stack.slice(0, 5).map((t) => <TechTag name={t} size="chip" />)}</div>
+      </a>
+    ))}
+  </div>
+
+  <h2>Featured side project</h2>
+  <p class="eyebrow">interactive demo</p>
+  <a class="card feature" href="/projects/line-order-agent/">
+    <div>
+      <h3>LINE Order Extraction Agent</h3>
+      <p>An LLM agent that reads a raw LINE group chat and writes every real order to Google Sheets — two-pass
+         extraction, verified writes, traced end to end. Watch the full pipeline replay in the browser.</p>
+      <div class="tags">{['Python', 'DSPy', 'OpenAI', 'Langfuse', 'Google Sheets API', 'LINE Messaging API'].map((t) => <TechTag name={t} size="chip" />)}</div>
+    </div>
+    <span class="go mono">run demo ▶</span>
   </a>
-  <p>More on the <a href="/projects/">projects page</a>.</p>
 </Base>
+
+<style>
+  .hero { display: grid; grid-template-columns: 240px 1fr; gap: 36px; align-items: center; padding: 20px 0 8px; }
+  .avatar-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  /* same frame as the about photo */
+  .avatar { width: 240px; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 18px; padding: 3px;
+            background: linear-gradient(140deg, var(--accent), var(--accent-2) 55%, var(--ok));
+            box-shadow: 0 20px 60px -18px rgba(56,189,248,.55); }
+  .status { font-family: var(--mono); font-size: .72rem; color: var(--ok); border: 1px solid rgba(52,211,153,.3);
+            background: rgba(52,211,153,.07); border-radius: 999px; padding: 3px 10px; display: flex; gap: 7px; align-items: center; white-space: nowrap; }
+  .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(52,211,153,.6); animation: ring 2s infinite; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 44px; border: 1px solid var(--line);
+           border-radius: 14px; overflow: hidden; background: var(--line); }
+  .stat { background: var(--card-solid); padding: 18px 18px; }
+  .stat-n { font-family: var(--mono); font-size: 1.45rem; font-weight: 600; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
+  .stat-l { color: var(--muted); font-size: .85rem; line-height: 1.4; margin-top: 2px; }
+  .k { font-size: .75rem; color: var(--accent); }
+  .card .k + h3 { margin-top: 6px; }
+  .feature { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 18px;
+             background: linear-gradient(120deg, rgba(56,189,248,.09), rgba(167,139,250,.08)), var(--card); }
+  .go { color: var(--accent); white-space: nowrap; font-size: .9rem; }
+  @keyframes ring { 70% { box-shadow: 0 0 0 8px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; gap: 22px; text-align: left; }
+    .avatar-wrap { align-items: flex-start; }
+    .avatar { width: min(260px, 70vw); }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .feature { flex-direction: column; align-items: flex-start; }
+  }
+</style>
