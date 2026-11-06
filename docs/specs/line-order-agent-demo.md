@@ -1,6 +1,6 @@
 # Spec: LINE Order Agent — animated demo
 
-Page: `src/pages/projects/line-order-agent.astro` · Component: `src/components/AgentRun.astro` · Data: `src/data/line-order-run.json`
+Page: `src/pages/projects/ai-powered-order-automation-platform.astro` · Component: `src/components/AgentRun.astro` · Data: `src/data/line-order-run.json`
 
 ## What the demo shows
 
@@ -38,7 +38,7 @@ Pushing to `main` deploys to GitHub Pages immediately, so every change is checke
 
 1. `node -v` — must be >= 22.23.4.
 2. `npm run build` — must finish with `Complete!` and no errors.
-3. `npx astro dev` and open <http://localhost:4321/projects/line-order-agent/>. Check:
+3. `npx astro dev` and open <http://localhost:4321/projects/ai-powered-order-automation-platform/>. Check:
    - chat messages appear and the emoji are stripped at the Sanitize stage;
    - each pipeline stage turns green / amber in order;
    - **the sheet fills in rows A:L** and each row ends `approved`;
@@ -47,6 +47,6 @@ Pushing to `main` deploys to GitHub Pages immediately, so every change is checke
    - no errors in the browser console.
    - **On the phone (Tailscale):** Tailscale runs on Windows, the dev server runs inside WSL. Start the server with
      `npx astro dev --host 0.0.0.0 --port 4321 --allowed-hosts desktop-htc5rqi-1.tail546de3.ts.net`, then in Windows run
-     `tailscale serve --bg 4321` and open <https://desktop-htc5rqi-1.tail546de3.ts.net/projects/line-order-agent/>
+     `tailscale serve --bg 4321` and open <https://desktop-htc5rqi-1.tail546de3.ts.net/projects/ai-powered-order-automation-platform/>
      (tailnet only). Turn it off with `tailscale serve --https=443 off`.
 4. Only after the owner has confirmed locally: commit, then `git push` to `main` (this triggers the deploy).
